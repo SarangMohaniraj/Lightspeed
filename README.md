@@ -43,6 +43,7 @@ You may change these values. It is not recommended to change any other values.
 |`star.opacity_speed` | flicker speed | `Math.random()/80`|
 |`star.size` | size | `(Math.random()*.2)+2.8`|
 |`velocity.z` | velocity | `0.005`|
+|`ctx.strokeStyle` | star color | `"white"`|
 
 ***
 #### `Default`

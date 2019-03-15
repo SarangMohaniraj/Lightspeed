@@ -1,3 +1,6 @@
+/**
+ * @author Sarang Mohaniraj
+ */
 const STAR_COUNT = (window.innerWidth + window.innerHeight) / 8; //recommended star count
 const THRESHOLD = 50;
 
@@ -7,6 +10,7 @@ var stars = [];
 var pointerX;
 var pointerY;
 
+var canJump = true; //prevents spam jump
 var velocity = {x: 0, y: 0, tailX: 0, tailY: 0, z: .0005};
 
 var c = document.querySelector(".lightspeed");
@@ -26,7 +30,8 @@ window.onresize = () => {
 };
 
 c.onmousemove = (event) => {
-	touchInput = false;
+	if(canJump){
+		touchInput = false;
 	//mouse position
 	let x = event.clientX;
 	let y = event.clientY;
@@ -42,10 +47,11 @@ c.onmousemove = (event) => {
 	//reset
 	pointerX = x;
 	pointerY = y;
-
+	}
 };
-c.ontouchmove = () => {
-	touchInput = true;
+c.ontouchmove = (e) => {
+	if(canJump){
+		touchInput = true;
 
 	//touch position
 	let x = event.touches[0].clientX;
@@ -56,13 +62,15 @@ c.ontouchmove = () => {
 		let offsetX = x - pointerX;
 		let offsetY = y - pointerY;
 
-		velocity.tailX += offsetX/8 * -1;
-		velocity.tailY += offsetY/8 * -1;
+		velocity.tailX += offsetX/8;
+		velocity.tailY += offsetY/8;
 
 	}
 	//reset
 	pointerX = x;
 	pointerY = y;
+	}
+e.preventDefault();
 };
 c.ontouchend = () => {
 	pointerX = null;
@@ -72,9 +80,10 @@ document.onmouseleave = () => {
 	pointerX = null;
 	pointerY = null;
 };
-canJump = true; //prevents spam click
+
 c.onmousedown = () => {
 	if(canJump){
+		velocity.z =.0005
 		velocity.z *=50;
 	}
 };
@@ -83,17 +92,9 @@ c.onmouseup = () => {
 		canJump = false;
 		velocity.z *=6;
 		stars.forEach((star) => {
-			star.size = Math.random()+1; 
-			stars.push({
-				x: Math.random() * c.width,
-				y: Math.random() * c.height,
-				z: (Math.random()*.8)+.2,
-				opacity: (Math.random()*0.5)+0.5,
-				opacity_speed: Math.random()/80,
-				opacity_factor: 1,
-				size: (Math.random()*.2)+2.8
-			});
+			stars.push(new Star());
 		});
+		Star.size(Math.random()+1); 
 	if(velocity.z > 15){ //prevents spam click
 		velocity.z /= 300;
 	}
@@ -110,16 +111,25 @@ c.onmouseup = () => {
 						stars.pop();
 					setTimeout( () => {
 						velocity.z /=5;
-						for(let i = 0; i< STAR_COUNT/4; i++)
+						for(let i = 0; i< STAR_COUNT/4; i++){
 							stars.pop();
+						}
+						Star.size((Math.random()*3.5)+.6);
 						setTimeout( () => {
 							velocity.z /=5;
 							if(velocity.z != .0005) velocity.z = .0005;
 							for(let i = 0; i< STAR_COUNT/4; i++)
 								stars.pop();
-							stars.forEach((star) => {
-								star.size = (Math.random()*.2)+2.8;
-							});
+							if(stars.length > STAR_COUNT){
+								for(let i = 0; i< stars.length-STAR_COUNT; i++){
+									stars.pop();
+								}
+							}
+							else if(stars.length < STAR_COUNT){
+								for(let i = 0; i< STAR_COUNT - stars.length; i++){
+									stars.push(new Star());
+								}
+							}
 							canJump = true;
 						}, 400);
 					}, 500);
@@ -127,51 +137,55 @@ c.onmouseup = () => {
 			}, 800);
 		}, (Math.random()*1200)+1500);
 	}
-	}
+}
 };
-document.addEventListener('wheel', speedSlider);
-
-
-function speedSlider(e){
+document.onwheel = (e) => {
 	/* Check whether the wheel event is supported. */
 	if (e.type == "wheel") supportsWheel = true;
 	else if (supportsWheel) return;
+	if(canJump){
+		/* Determine the direction of the scroll (< 0 → up, > 0 → down). */
+		var delta = e.deltaY || e.deltaX || 1;
+		if(velocity.z > 1){
+			velocity.z = 1;
+		}else if(velocity.z < .0005){
+			velocity.z = .0005;
+		}else{
+			velocity.z -= delta/c.width/10;
 
-	/* Determine the direction of the scroll (< 0 → up, > 0 → down). */
-	var delta = e.deltaY || e.deltaX || 1;
-	if(velocity.z > 15){
-		velocity.z = 15;
-	}else if(velocity.z < .0005){
-		velocity.z = .0005;
-	}else{
-		velocity.z -= delta/c.width/10;
-		console.log(velocity.z);
+		}
 	}
 }
+class Star{
+	constructor(){
+		this.x = Math.random() * c.width;
+		this.y = Math.random() * c.height;
+		this.z = (Math.random()*.8)+.2;
+		this.opacity = (Math.random()*0.5)+0.5;
+		this.opacity_speed = Math.random()/80;
+		this.opacity_factor = 1;
+		this.size = (Math.random()*3.5)+.6
+	}
+	// static size(size){ //works only sometimes
+	// 	this.size = size;
+	// }
+}
+Star.size = (size) => {this.size = size}; //this always works
 
 generate();
 refresh();
 
+
 function generate() {
 	for(let i = 0; i < STAR_COUNT; i++){
-		stars.push({
-			x: Math.random() * c.width,
-			y: Math.random() * c.height,
-			z: (Math.random()*.8)+.2,
-			opacity: (Math.random()*0.5)+0.5,
-			opacity_speed: Math.random()/80,
-			opacity_factor: 1,
-			size: (Math.random()*.2)+2.8
-		});
+		stars.push(new Star());
 	}
 }
 
 function refresh() {
 	ctx.clearRect(0, 0, c.width, c.height);
-
 	update();
 	render();
-
 	requestAnimationFrame(refresh);
 }
 
